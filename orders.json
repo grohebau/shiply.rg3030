@@ -1,0 +1,47 @@
+{
+  "S33521": {
+    "status": "Waiting for payment",
+    "statusClass": "pending",
+    "sender": "Lukas Jensen, Möwenstraße 8, 18209 Bad Doberan, Germany",
+    "receiver": "Siniša Galešic, Ul. Debeli vrv 10, 52100 Vinkuran, Croatia",
+    "price": "17.500 €",
+    "description": "Manufacturer: Harley-Davidson<br>Model: Breakout FXSB<br>Chassis number: 5HD1BFVC9EB038477<br>First registration: 07/2014<br>Mileage according to previous owner: 21,836 km<br>Power: 55 kW (75 PS)<br>Engine capacity: 1.690 cm³<br>Color: Gray<br><br>The motorcycle is fully functional, no falls or accidents.<br>All papers and keys are included.",
+    "address": "Siniša Galešic<br>Ul. Debeli vrv 10<br>52100 Vinkuran<br>Croatia<br>Telefon: +385 98 166 2890",
+    "documents": [
+      {
+        "name": "Delivery note",
+        "url": "docs/Delivery_note.pdf"
+      },
+      {
+        "name": "Purchase contract",
+        "url": "docs/Purchase_Contract.pdf"
+      },
+      {
+        "name": "Invoice",
+        "url": "docs/Invoice.pdf"
+      },
+      {
+        "name": "Terms & Conditions",
+        "url": "docs/Terms.pdf"
+      }
+    ],
+    "orderDate": "09.02.2026",
+    "deliveryDate": "13.02.2026",
+    "pickup": {
+      "street": "",
+      "postal_code": "",
+      "city": "",
+      "country": "",
+      "lat": "",
+      "lng": ""
+    },
+    "delivery": {
+      "street": "",
+      "postal_code": "",
+      "city": "",
+      "country": "",
+      "lat": "",
+      "lng": ""
+    }
+  }
+}

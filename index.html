@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Tracking</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+<link rel="shortcut icon" href="favicon/favicon.ico">
+<link rel="manifest" href="favicon/site.webmanifest">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+<link href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" rel="stylesheet"/>
+<style>
+    .card { padding: 1rem; background-color: white; border-radius: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+    .status-button { color: white; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-weight: 600; font-size: 0.875rem; }
+    .status-waiting { background-color: #f7941d; }
+    .leaflet-routing-container { display: none !important; }
+    #routeText {
+      font-weight: 400;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+.verfolgen-button { background-color: #f7941d; color: white; }
+button, .status-button {
+  transition: all 0.3s ease-in-out;
+}
+button:hover, .status-button:hover {
+  opacity: 0.9;
+}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/><style>body { font-family: 'Inter', sans-serif; }</style></head>
+<body class="bg-gray-100 text-gray-800"><div style="background-color: #0f4c8f; padding: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; border-bottom-left-radius: 60px;"><a href="https://www.shiply.com/de" target="_blank"><img alt="Logo" class="h-12" src="logo.png"/></a><h1 class="text-xl font-bold" style="color: white; font-size: 1.5rem; font-weight: bold; margin-left: auto;"><a href="https://www.shiply.com/de/motorradtransport/" target="_blank">Delivery firms compete for your job.</a></h1><a class="text-right text-white text-xs sm:text-sm leading-tight ml-auto hover:opacity-90 transition" href="https://www.reviews.co.uk/company-reviews/store/shiply" target="_blank"><p>Our customers say <strong>excellent</strong><img alt="4.5 stars" class="inline h-4 ml-1 align-middle" src="reviewsBanner-stars-t.png"/></p><p><strong>4,5</strong> out of 5 based on <strong>42.822</strong> reviews <img alt="Star Logo" class="inline h-4 align-middle" src="Rstar.png"/><span class="font-semibold text-white">REVIEWS.io</span></p></a></div>
+<div class="text-center mt-16" id="trackingForm">
+<input class="border px-4 py-2 rounded w-2/3 max-w-sm" id="trackingNumber" placeholder="Enter tracking number" required="" type="text"/>
+<button class="text-white font-bold py-2 px-4 rounded ml-2" id="trackBtn" style=" background-color: #f7941d">Track</button>
+</div>
+<div class="max-w-3xl mx-auto mt-6 hidden" id="details">
+<h2 class="text-2xl font-bold mb-2">Harley-Davidson Breakout FXSB - delivery</h2>
+<div class="grid grid-cols-2 gap-4">
+<p><strong>Order number:</strong> RG3030</p>
+<p><strong>Tracking number:</strong> <span id="trackingNumberDisplay"></span></p>
+<p><strong>Price:</strong> <span id="price"></span></p>
+<p><strong>Status:</strong> <button class="status-button status-waiting" id="statusText">Waiting for payment</button></p>
+<p><strong>Sender:</strong> <span id="sender"></span></p>
+<p><strong>Receiver:</strong> <span id="receiver"></span></p>
+<p><strong>Order date:</strong> <span id="orderDate"></span></p>
+<p><strong>Estimated delivery date:</strong> <span id="deliveryDate"></span></p>
+</div>
+<div class="my-6">
+<div class="w-full bg-gray-300 rounded h-2 mb-2">
+<div class="bg-red-700 h-2 rounded" style="width: 30%;"></div>
+</div>
+<div class="text-sm flex justify-between">
+<span>Payment</span><span>Shipping</span><span>Delivered</span>
+</div>
+</div>
+<div class="card rounded-lg p-6 shadow-md bg-white" style=" margin-bottom: 1.5rem;">
+<h3 class="font-semibold mb-1">Description:</h3>
+<div id="description"></div>
+</div>
+<div class="card rounded-lg p-6 shadow-md bg-white" style=" margin-bottom: 1.5rem;">
+<h3 class="font-semibold mb-1">Delivery address:</h3>
+<div id="address"></div>
+</div>
+<div class="card rounded-lg p-6 shadow-md bg-white" style=" margin-bottom: 1.5rem;">
+<h3 class="font-semibold mb-2">Documents</h3>
+<div class="flex flex-wrap gap-3" id="documents"></div>
+</div>
+<div class="text-center" id="routeText"></div>
+<div class="w-full h-96 mt-2 rounded shadow" id="map"></div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<script>
+    
+
+
+
+
+
+async function showRoute(order) {
+  const map = L.map("map").setView([51.1657, 10.4515], 6);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors",
+  }).addTo(map);
+
+  let fromDisplay = "";
+  let toDisplay = "";
+  let fromCoords = null;
+  let toCoords = null;
+
+  // Helper to clean sender/receiver text
+  const stripName = (full) => {
+    const parts = full.split(',');
+    parts.shift();
+    return parts.join(',').trim();
+  };
+
+  // Pickup logic
+  if (order.pickup && order.pickup.lat && order.pickup.lng) {
+    fromCoords = [parseFloat(order.pickup.lat), parseFloat(order.pickup.lng)];
+    fromDisplay = `${order.pickup.street}, ${order.pickup.postal_code || ""} ${order.pickup.city}, ${order.pickup.country}`.trim();
+  } else if (order.pickup && order.pickup.street && order.pickup.city && order.pickup.country) {
+    fromDisplay = `${order.pickup.street}, ${order.pickup.postal_code || ""} ${order.pickup.city}, ${order.pickup.country}`.trim();
+  } else {
+    fromDisplay = stripName(order.sender);
+  }
+
+  // Delivery logic
+  if (order.delivery && order.delivery.lat && order.delivery.lng) {
+    toCoords = [parseFloat(order.delivery.lat), parseFloat(order.delivery.lng)];
+    toDisplay = `${order.delivery.street}, ${order.delivery.postal_code || ""} ${order.delivery.city}, ${order.delivery.country}`.trim();
+  } else if (order.delivery && order.delivery.street && order.delivery.city && order.delivery.country) {
+    toDisplay = `${order.delivery.street}, ${order.delivery.postal_code || ""} ${order.delivery.city}, ${order.delivery.country}`.trim();
+  } else {
+    toDisplay = stripName(order.receiver);
+  }
+
+  // Show route line above map (always address text)
+  document.getElementById("routeText").textContent = `${fromDisplay} → ${toDisplay}`;
+
+  const geocode = async (address) => {
+    const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijc3MWIxOGNiMjVhZTRmYjU5MDNjOTg3NDVhZjlhOGFlIiwiaCI6Im11cm11cjY0In0=";
+    const response = await fetch(`https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(address)}`);
+    const data = await response.json();
+    if (data.features && data.features.length > 0) {
+      return data.features[0].geometry.coordinates.reverse();
+    } else {
+      throw new Error("Adresse nicht gefunden: " + address);
+    }
+  };
+
+  try {
+    if (!fromCoords) fromCoords = await geocode(fromDisplay);
+    if (!toCoords) toCoords = await geocode(toDisplay);
+
+    L.Routing.control({
+      waypoints: [
+        L.latLng(fromCoords),
+        L.latLng(toCoords)
+      ],
+      lineOptions: { styles: [{ color: "red", weight: 5 }] },
+      
+createMarker: function (i, waypoint) {
+  const label = i === 0 ? "🚚" : "🎯";
+  return L.marker(waypoint.latLng)
+           .bindTooltip(label, { permanent: true, direction: 'top' })
+           .openTooltip();
+},
+
+      router: L.Routing.osrmv1(),
+      show: false,
+      addWaypoints: false,
+      routeWhileDragging: false,
+      fitSelectedRoutes: true,
+      showAlternatives: false
+    }).addTo(map);
+
+  } catch (error) {
+    console.error(error);
+    alert("Fehler beim Ermitteln der Route: " + error.message);
+  }
+}
+
+
+
+
+
+
+
+    async function loadTracking(tracking) {
+      try {
+        const response = await fetch("orders.json");
+        const orders = await response.json();
+
+        if (!orders[tracking]) {
+          alert("Trackingnummer nicht gefunden.");
+          return false;
+        }
+
+        const order = orders[tracking];
+        document.getElementById("trackingNumberDisplay").textContent = tracking;
+        document.getElementById("statusText").textContent = order.status;
+
+// Extra styling based on status
+const statusBtnColor = document.getElementById("statusText");
+if (order.status === "Waiting for payment") {
+  statusBtnColor.style.backgroundColor = "#f7941d";
+  statusBtnColor.style.color = "white";
+} else if (order.status === "Preparation for transport") {
+  statusBtnColor.style.backgroundColor = "#0f4c8f";
+  statusBtnColor.style.color = "white";
+} else if (order.status === "In transit") {
+  statusBtnColor.style.backgroundColor = "#28a745";
+  statusBtnColor.style.color = "white";
+} else {
+  statusBtnColor.style.backgroundColor = "";
+  statusBtnColor.style.color = "";
+}
+
+        document.getElementById("sender").textContent = order.sender;
+        document.getElementById("receiver").textContent = order.receiver;
+        document.getElementById("price").textContent = order.price;
+        document.getElementById("description").innerHTML = order.description;
+        document.getElementById("address").innerHTML = order.address;
+        document.getElementById("orderDate").textContent = order.orderDate || "N/A";
+        document.getElementById("deliveryDate").textContent = order.deliveryDate || "N/A";
+
+        document.getElementById("documents").innerHTML = order.documents.map(d =>
+          `<a href="${d.url}" target="_blank" class="block border rounded px-3 py-2 bg-gray-50 hover:bg-gray-100 shadow text-sm">
+            📄 ${d.name}
+          </a>`
+        ).join('');
+
+        const statusBtn = document.getElementById("statusText");
+        if (order.status.toLowerCase().includes("waiting for payment")) {
+          const Invoice = order.documents.find(d => d.name.toLowerCase().includes("invoice"));
+          if (Invoice) {
+            statusBtn.style.cursor = "pointer";
+            statusBtn.onclick = () => window.open(Invoice.url, "_blank");
+          }
+        }
+
+        document.getElementById("details").classList.remove("hidden");
+        // --- Dynamic progress bar update ---
+        try {
+          const progressBar = document.querySelector('.w-full.bg-gray-300.rounded.h-2.mb-2 > div');
+          if (progressBar) {
+            // Remove old bg-* classes
+            Array.from(progressBar.classList).forEach(c => { if (c.startsWith('bg-')) progressBar.classList.remove(c); });
+            // Apply based on status
+            if (order.status === "Waiting for payment") {
+              progressBar.style.width = "30%";
+              progressBar.style.backgroundColor = "#f7941d";
+            } else if (order.status === "Preparation for transport") {
+              progressBar.style.width = "50%";
+              progressBar.style.backgroundColor = "#0f4c8f";
+            } else if (order.status === "In transit") {
+              progressBar.style.width = "85%";
+              progressBar.style.backgroundColor = "#28a745";
+            } else {
+              progressBar.style.width = "30%";
+              progressBar.style.backgroundColor = "#f7941d";
+            }
+            progressBar.style.transition = "width 0.6s ease, background-color 0.3s ease";
+          }
+        } catch(e) { console.error('Progress bar update error', e); }
+
+        showRoute(order);
+        return true;
+      } catch (error) {
+        alert("Fehler beim Laden der Trackingdaten.");
+        console.error(error);
+        return false;
+      }
+    }
+
+    window.addEventListener("load", async () => {
+      const params = new URLSearchParams(window.location.search);
+      const tracking = params.get("tracking");
+
+      if (tracking) {
+        document.getElementById("trackingForm").classList.add("hidden");
+        const success = await loadTracking(tracking);
+        if (!success) {
+          document.getElementById("details").classList.add("hidden");
+          document.getElementById("trackingForm").classList.remove("hidden");
+        }
+      } else {
+        document.getElementById("trackingForm").classList.remove("hidden");
+        document.getElementById("details").classList.add("hidden");
+      }
+    });
+
+    document.getElementById("trackBtn").addEventListener("click", () => {
+      const val = document.getElementById("trackingNumber").value.trim();
+      if (val) {
+        window.location.href = window.location.pathname + "?tracking=" + encodeURIComponent(val);
+      }
+    });
+  </script>
+<footer class="bg-gray-100 text-center py-4 text-sm text-gray-600 mt-10" style="background: linear-gradient(to right, #f3f4f6 0%, #f3f4f6 100%); color: #111; padding: 1rem;"><a class="underline" href="docs/Shiply_Privacy.pdf" target="_blank">Privacy policy</a> · <a class="underline" href="docs/Shiply_Terms.pdf" target="_blank">Terms & Conditions</a> · <a class="underline" href="https://www.shiply.com/about" target="_blank">About</a> · <a class="underline" href="docs/Contact.pdf" target="_blank">Contact</a><br/>Shiply Worldwide Ltd. © 2026, Lyoner Str. 14, 60528 Frankfurt am Main</footer>
+<!-- WARNING: Missing IDs in English HTML: trackingInput, orderDetails -->
+</body>
+</html>
