@@ -28,10 +28,10 @@
     "orderDate": "09.02.2026",
     "deliveryDate": "February 13–14, 2026",
     "pickup": {
-      "street": "",
-      "postal_code": "",
-      "city": "",
-      "country": "",
+      "street": "Kukuljanovo 182",
+      "postal_code": "51223",
+      "city": "Kukuljanovo",
+      "country": "Croatia",
       "lat": "",
       "lng": ""
     },
