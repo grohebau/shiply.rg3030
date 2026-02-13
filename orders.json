@@ -1,6 +1,6 @@
 {
   "S33521": {
-    "status": "Preparation for transport",
+    "status": "In transit",
     "statusClass": "pending",
     "sender": "Lukas Jensen, Möwenstraße 8, 18209 Bad Doberan, Germany",
     "receiver": "Siniša Galešic, Ul. Debeli vrv 10, 52100 Vinkuran, Croatia",
@@ -26,7 +26,7 @@
       }
     ],
     "orderDate": "09.02.2026",
-    "deliveryDate": "13.02.2026",
+    "deliveryDate": "February 13–14, 2026",
     "pickup": {
       "street": "",
       "postal_code": "",
